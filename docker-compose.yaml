@@ -36,7 +36,7 @@ services:
     container_name: ch-shard01-replica01
     ports:
       - "8123:8123"     # 🔥 HTTP основной (DBeaver/Airflow)
-      - "9000:9000"     # Native TCP (CLI/JDBC)
+      - "9002:9000"     # Native TCP (CLI/JDBC)
       - "9009:9009"     # Interserver HTTP
     environment:
       CLICKHOUSE_DB: default
@@ -67,7 +67,7 @@ services:
     container_name: ch-shard02-replica01
     ports:
       - "8124:8123"     # HTTP шард 2
-      - "9001:9000"     # Native TCP шард 2
+      - "9003:9000"     # Native TCP шард 2
       - "9010:9009"     # Interserver шард 2
     environment:
       CLICKHOUSE_DB: default
