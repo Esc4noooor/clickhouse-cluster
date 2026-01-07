@@ -42,6 +42,7 @@ services:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     volumes:
       - ch_data_01:/var/lib/clickhouse
       - ./configs/remote_servers.xml:/etc/clickhouse-server/config.d/remote_servers.xml:ro
@@ -73,6 +74,7 @@ services:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     volumes:
       - ch_data_02:/var/lib/clickhouse
       - ./configs/remote_servers.xml:/etc/clickhouse-server/config.d/remote_servers.xml:ro
