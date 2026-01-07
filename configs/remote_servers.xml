@@ -1,26 +1,31 @@
+<?xml version="1.0"?>
 <clickhouse>
   <remote_servers>
     <my_cluster>
       <shard>
+        <internal_replication>true</internal_replication>
         <replica>
-          <host>clickhouse-01</host>
+          <host>ch01</host>
           <port>9000</port>
         </replica>
       </shard>
       <shard>
+        <internal_replication>true</internal_replication>
         <replica>
-          <host>clickhouse-02</host>
+          <host>ch02</host>
           <port>9000</port>
         </replica>
       </shard>
     </my_cluster>
   </remote_servers>
   <keeper_server>
-    <tcp_port>9181</tcp_port>
+    <tcp_port>2181</tcp_port>
     <server>
       <id>1</id>
-      <hostname>clickhouse-keeper-01</hostname>
-      <port>9444</port>
+      <endpoint>
+        <host>keeper-01</host>
+        <port>9444</port>
+      </endpoint>
     </server>
   </keeper_server>
 </clickhouse>
