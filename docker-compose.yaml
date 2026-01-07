@@ -6,34 +6,40 @@ volumes:
   ch_keeper_data:
 
 services:
-  ### ClickHouse Keeper (замена ZooKeeper)
+  ### ClickHouse Keeper (замена ZooKeeper) - УПРОЩЁННЫЙ HEALTHCHECK
   keeper-01:
     image: clickhouse/clickhouse-keeper:25.3
     container_name: ch-keeper-01
     ports:
-      - "2181:2181"    # клиентский порт (изменяй слева)
+      - "2181:2181"    # клиентский порт (ZooKeeper протокол)
       - "9181:9181"    # HTTP мониторинг
-      - "9444:9444"    # raft (внутренний, не трогай)
+      - "9444:9444"    # raft (НЕ МЕНЯЙ)
     volumes:
       - ./configs/keeper_config.xml:/etc/clickhouse-keeper/keeper_config.xml:ro
       - ch_keeper_data:/var/lib/clickhouse-keeper
     command: --tcp-port 2181 --raft-configuration 0:keeper-01:9444
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9181/op_status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 2>/dev/null | grep imok || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
 
-  ### Шард 1, Реплика 1
+  ### ШАРД 1, РЕПЛИКА 1
   ch01:
     image: clickhouse/clickhouse-server:25.3
-    container_name: ch-shard01-01
+    container_name: ch-shard01-replica01
     ports:
-      - "8123:8123"     # HTTP интерфейс (DBeaver) ← ОСНОВНОЙ
-      - "9002:9000"     # Native TCP (CLI, JDBC)
+      - "8123:8123"     # 🔥 HTTP основной (DBeaver/Airflow)
+      - "9000:9000"     # Native TCP (CLI/JDBC)
       - "9009:9009"     # Interserver HTTP
     environment:
+      CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
     volumes:
@@ -42,23 +48,29 @@ services:
       - ./configs/users.xml:/etc/clickhouse-server/users.d/users.xml:ro
       - ./configs/macros/shard01.xml:/etc/clickhouse-server/config.d/macros.xml:ro
     depends_on:
-      keeper-01:
-        condition: service_healthy
+      - keeper-01
     restart: always
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  ### Шард 2, Реплика 1
+  ### ШАРД 2, РЕПЛИКА 1
   ch02:
     image: clickhouse/clickhouse-server:25.3
-    container_name: ch-shard02-01
+    container_name: ch-shard02-replica01
     ports:
-      - "8124:8123"     # HTTP (DBeaver для 2го шарда)
-      - "9003:9000"     # Native TCP
-      - "9010:9009"     # Interserver
+      - "8124:8123"     # HTTP шард 2
+      - "9001:9000"     # Native TCP шард 2
+      - "9010:9009"     # Interserver шард 2
     environment:
+      CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
     volumes:
@@ -67,10 +79,15 @@ services:
       - ./configs/users.xml:/etc/clickhouse-server/users.d/users.xml:ro
       - ./configs/macros/shard02.xml:/etc/clickhouse-server/config.d/macros.xml:ro
     depends_on:
-      keeper-01:
-        condition: service_healthy
+      - keeper-01
     restart: always
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
